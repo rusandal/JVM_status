@@ -1,7 +1,7 @@
 //JVM ищет точку входа в программу, т.е. main метод
 public class JvmComprehension {
     //Создается фрейм с названием метода в области памяти StackMemory и загружает class JvmComprehension в область памяти метаданные.
-    //В этот фрей помещается помещается String[] args
+    //В этот фрейм помещается args и создается объект в куче. При запуске GC он переместит объект из Idem в Survivor0 и очистит Idem.
     public static void main(String[] args) {
         //В созданный фрейм помещается тип, переменная и ее значение
         int i = 1;                      // 1
@@ -9,7 +9,7 @@ public class JvmComprehension {
         // Для этого, ClassLoading начинает поиск класса внутри себя направляя запрос Application ClassLoader. Application ClassLoader передает
         // запрос в Bootstrap ClassLoader через звено Platform ClassLoader. Bootstrap ClassLoader загружает класс Object в область
         // памяти Metaspace предварительно проведя Linking и Initialization. Создается объект в куче и помещает во фрейм main ссылку на объект в куче.
-        // ... "о" как GCROOTS (связь с 1-м объектом)->Survivor0
+        // ... "о" как GCROOTS (связь с 1-м объектом)->Survivor0.
         Object o = new Object();        // 2
         //В созданный фрейм помещается тип, переменная и ее значение
         // ... "ii" как GCROOTS (связь с 1-м объектом)->Survivor0
@@ -19,7 +19,8 @@ public class JvmComprehension {
         //Создается новый фрейм
         //создается новый экземпляр объекта
         // Во фрейм помещается ссылка со значением на созданный экземпляр объекта.
-        // ... "finished" как GCROOTS (связь с 1-м объектом)->Survivor0
+        // ... Если запуститься GC то "finished" как GCROOTS (связь с 1-м объектом)->Survivor0. GC удалит объект из кучи на который ссылался uselessVar,
+        // которого уже нет и еще удалит объект String, созданный в момент o.toString, так как ссылки "o" фрейма PrintAll уже нет.
         System.out.println("finished"); // 7
     }
 
@@ -32,7 +33,7 @@ public class JvmComprehension {
         // ... "userlessVar" как GCROOTS (связь с 1-м объектом)->Survivor0
         Integer uselessVar = 700;                   // 5
         //Так как класс System системный, то он уже есть в Metaspace. Создается новый фрейм printLn в который помещаются ссылки i, ii, o,
-        // ссылающиеся на ранее созданные объекты в куче. о создает еще один объект в куче.
+        // ссылающиеся на ранее созданные объекты в куче. о создает еще один объект в куче String.
         // JVM выполняет метод и возращается обратно по ссылке выданной при переходе в метод.
         //"о" как GCROOTS (связь с 1-м объектом)->Survivor1 ... "ii" как GCROOTS (связь с 1-м объектом)->Survivor1
         System.out.println(o.toString() + i + ii);  // 6
